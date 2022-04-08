@@ -1,0 +1,54 @@
+import requests
+import json
+from collections import defaultdict
+import datetime
+
+
+# defaultdict is (in this case) better then Counter because you add 1 name at a time
+# Counter is superiour if you update whole iterables of names at a time 
+d = defaultdict(int)
+
+def insertToDict(n):
+    d[n] += 1
+
+url = 'https://api.namefake.com'
+api_times = []
+process_times = []
+requests.packages.urllib3.disable_warnings()
+for x in range(10):
+    # for each name, break it to first and last name
+    try:
+        t = datetime.datetime.now()      # start time for API call
+        # no need for authentication
+        responseObj = requests.get(url, verify=False)
+        jsonData = json.loads(responseObj.text)
+
+        # end time for API call
+        api_times.append( (datetime.datetime.now()-t).total_seconds() )
+        x = jsonData['name']
+
+        t = datetime.datetime.now()      # start time for name processing
+        newName = ""
+        for name_char in x:
+            # make a string from the decoded python object concatenation
+            newName = newName + str(name_char)
+
+        # split by whitespaces
+        y = newName.split()
+
+        # parse the first name (check first if header exists (Prof. , Dr. , Mr. , Miss)
+        if "." in y[0] or "Miss" in y[0]:
+            insertToDict(y[2])
+        else:
+            insertToDict(y[0])
+        insertToDict(y[1])
+
+        # end time for name processing
+        process_times.append( (datetime.datetime.now()-t).total_seconds() )
+    except:
+        continue
+
+newA = sorted(d, key=d.get, reverse=True)[:10]
+print(newA)
+print(sum(api_times))
+print(sum( process_times )) 
